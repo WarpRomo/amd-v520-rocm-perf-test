@@ -31,6 +31,8 @@ This project automates the installation of these dependencies and provides a ben
 <img width="1000" alt="img1" src="https://github.com/user-attachments/assets/626a4f1d-46c4-43b0-a951-6ee47adade56" />
 </div>
 
+### Performance Visualization
+
 The log-log plot below illustrates the crossover point between CPU latency and GPU throughput.
 
 *   **Vertical Axis:** Execution time in microseconds ($\mu s$).
