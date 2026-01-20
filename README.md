@@ -29,6 +29,7 @@ This project automates the installation of these dependencies and provides a ben
 <div align="center">
 
 <img width="1000" alt="img1" src="https://github.com/user-attachments/assets/626a4f1d-46c4-43b0-a951-6ee47adade56" />
+</div>
 
 The log-log plot below illustrates the crossover point between CPU latency and GPU throughput.
 
@@ -37,8 +38,8 @@ The log-log plot below illustrates the crossover point between CPU latency and G
 *   **Black Series (CPU):** Shows linear scaling; faster for small inputs.
 *   **Red Series (GPU):** Demonstrates constant startup overhead (kernel launch/PCIe) but superior scaling for $N > 10^5$.
 
+<div align="center">
 <img width="1000" alt="img2" src="https://github.com/user-attachments/assets/863fe79d-1571-4638-be63-c7c1f18a1806" />
-
 </div>
 
 ## Prerequisites
