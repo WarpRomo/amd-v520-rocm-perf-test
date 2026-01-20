@@ -1,27 +1,30 @@
 # AWS G4ad ROCm Setup & Benchmark
 
-This project provides a turnkey solution for setting up **AMD ROCm 5.7** drivers on **AWS EC2 G4ad** instances (AMD Radeon Pro V520). It includes an automated setup script to handle the specific kernel overrides required for the `gfx1011` architecture and a high-precision benchmark suite to compare CPU vs. GPU performance.
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+[![Platform](https://img.shields.io/badge/platform-AWS%20EC2%20G4ad-orange.svg)](https://aws.amazon.com/ec2/instance-types/g4/)
+[![GPU](https://img.shields.io/badge/GPU-Radeon%20Pro%20V520-red.svg)](https://www.amd.com/en/graphics/workstations)
+[![ROCm](https://img.shields.io/badge/ROCm-5.7-blue.svg)](https://rocm.docs.amd.com/)
+[![OS](https://img.shields.io/badge/OS-Ubuntu%2022.04-purple.svg)](https://releases.ubuntu.com/jammy/)
+
+This repository contains scripts to install AMD ROCm 5.7 drivers and run compute benchmarks on AWS EC2 G4ad instances (AMD Radeon Pro V520).
 
 ## Overview
 
-Running ROCm on AWS G4ad instances is historically difficult because the Radeon Pro V520 is an RDNA1 card that requires specific environment overrides and kernel headers to function correctly. This project automates the fix and proves the performance gain.
+The Radeon Pro V520 is based on the RDNA1 architecture (`gfx1011`). Official ROCm support for this architecture is limited, often requiring environment overrides (`HSA_OVERRIDE_GFX_VERSION`) and specific kernel headers to function on AWS.
 
-This project demonstrates:
-*   **Automated Recovery:** Fixes broken driver states and installs AWS-specific kernel modules.
-*   **Architecture Overrides:** Automatically forces `HSA_OVERRIDE_GFX_VERSION=10.1.0` for compatibility.
-*   **High-Precision Benchmarking:** Compares vector addition ($C = A + B$) on CPU vs. GPU across varying array sizes.
+This project automates the installation of these dependencies and provides a benchmark utility to verify the environment by comparing CPU and GPU execution times for vector addition.
 
 ## Files
 
 | File | Description |
 | :--- | :--- |
-| `examples.log` | This file contains the full execution transcript of the ROCm benchmark. |
-| `setup_rocm.sh` | The installation script. It removes conflicting drivers, installs ROCm 5.7 without DKMS, fixes permissions, and applies the necessary architecture workarounds. |
-| `rocm_benchmark.sh` | A C++ based benchmark suite. It runs 50 iterations per data point, ranging from 10 to 10,000,000 elements, to visualize the latency crossover point between CPU and GPU. |
+| `examples.log` | Contains the full execution transcript of the ROCm setup and validation process, serving as a diagnostic record to verify that the AMD GPU environment is correctly configured. |
+| `setup_rocm.sh` | Installs AWS-specific kernel modules, removes conflicting `amdgpu-dkms` drivers, installs the ROCm 5.7 runtime, and configures the necessary environment variables. |
+| `rocm_benchmark.sh` | A C++ HIP benchmark suite. It compiles a vector addition program and runs it against array sizes ranging from 10 to 10,000,000 elements to measure latency and throughput. |
 
 ## Demo
 
-Below are examples of the benchmark running on a g4ad.xlarge instance.
+**Benchmark output on g4ad.xlarge:**
 
 <div align="center">
 
@@ -32,14 +35,14 @@ Below are examples of the benchmark running on a g4ad.xlarge instance.
 
 ## Prerequisites
 
-*   **Instance Type:** AWS EC2 `g4ad.xlarge` (or larger).
+*   **Instance Type:** AWS EC2 `g4ad.xlarge` or larger.
 *   **OS:** Ubuntu 22.04 LTS (x86_64).
-*   **Storage:** At least 50GB gp3 (ROCm is large).
+*   **Storage:** Minimum 50GB (Recommended for ROCm dependencies).
 
 ## Installation
 
 ### 1. Run the Setup Script
-This script installs the necessary AWS kernel headers, `libstdc++-12-dev`, and the ROCm runtime. It handles the removal of broken `amdgpu-dkms` modules if they exist.
+Execute the script to update the system, install headers, and setup the drivers.
 
 ```bash
 chmod +x setup_rocm.sh
@@ -48,7 +51,7 @@ chmod +x setup_rocm.sh
 
 > [!IMPORTANT]
 > **Reboot Required**
-> After the setup script finishes, you **must** reboot the instance for the user permissions and driver overrides to take effect.
+> A reboot is necessary for the user group permissions (`render`, `video`) and environment variables to apply correctly.
 > ```bash
 > sudo reboot
 > ```
@@ -56,36 +59,28 @@ chmod +x setup_rocm.sh
 ## Usage
 
 ### Run the Benchmark
-Once the instance is back online, run the benchmark suite. It compiles the test binary on the fly and executes the suite.
+After rebooting, run the benchmark script. This will compile the C++ source and execute the tests.
 
 ```bash
 chmod +x rocm_benchmark.sh
 ./rocm_benchmark.sh
 ```
 
-## Performance Analysis
+## Performance Data
 
-The benchmark performs Vector Addition on array sizes ranging from **10** to **10,000,000** elements. It runs **50 iterations** per size to smooth out OS jitter.
+The benchmark runs 50 iterations per data point to measure the execution time of Vector Addition ($C = A + B$) on both CPU and GPU.
 
-### 1. Startup Latency (Small Data)
-For small arrays (< 80,000 elements), the **CPU is significantly faster**.
-*   **Reason:** Moving data across the PCIe bus and the overhead of launching a GPU kernel takes a fixed amount of time (approx. 15-20 microseconds). The CPU can finish the math before the GPU even starts.
+### Latency vs Throughput
+*   **Small Data (< 80k elements):** The CPU is faster due to the overhead associated with PCIe data transfer and GPU kernel launching (approx. 15-20 µs).
+*   **Crossover Point:** At roughly **82,000 elements**, the GPU parallelization outweighs the startup overhead.
+*   **Large Data (> 1M elements):** The GPU processes data significantly faster than the CPU.
 
-### 2. The Crossover Point
-At approximately **82,000 elements**, the sheer parallel power of the GPU overcomes the startup latency.
-*   **CPU Time:** ~18.3 µs
-*   **GPU Time:** ~18.1 µs
-
-### 3. Massive Scaling (Large Data)
-Once the data size exceeds 1 Million, the GPU becomes exponentially more efficient.
-*   At **10 Million elements**, the GPU is over **14x faster** than the CPU.
-
-| Size | CPU Time | GPU Time | Speedup |
+| Size | CPU Time | GPU Time | Note |
 | :--- | :--- | :--- | :--- |
-| 1,000 | 0.14 us | 15.70 us | CPU Win |
-| 82,000 | 18.30 us | 18.10 us | **Crossover** |
-| 1,000,000 | 207.12 us | 44.46 us | **4.6x** |
-| 10,000,000 | 4570.06 us | 313.79 us | **14.5x** |
+| 1,000 | 0.14 us | 15.70 us | Latency dominated |
+| 82,000 | 18.30 us | 18.10 us | **Crossover point** |
+| 1,000,000 | 207.12 us | 44.46 us | 4.6x Speedup |
+| 10,000,000 | 4570.06 us | 313.79 us | 14.5x Speedup |
 
 ## Sample Output
 
@@ -99,7 +94,6 @@ Size         | Iters        | CPU (us)        | GPU (us)        | Winner
 82000        | 50           | 18.306          | 18.109          | GPU
 88000        | 50           | 19.462          | 28.224          | CPU
 94000        | 50           | 23.285          | 18.395          | GPU
-100000       | 50           | 21.107          | 17.800          | GPU
 ...
 1000000      | 50           | 207.121         | 44.467          | GPU
 ...
