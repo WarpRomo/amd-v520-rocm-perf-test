@@ -15,6 +15,7 @@ This project demonstrates:
 
 | File | Description |
 | :--- | :--- |
+| `examples.log` | This file contains the full execution transcript of the ROCm benchmark. |
 | `setup_rocm.sh` | The installation script. It removes conflicting drivers, installs ROCm 5.7 without DKMS, fixes permissions, and applies the necessary architecture workarounds. |
 | `rocm_benchmark.sh` | A C++ based benchmark suite. It runs 50 iterations per data point, ranging from 10 to 10,000,000 elements, to visualize the latency crossover point between CPU and GPU. |
 
