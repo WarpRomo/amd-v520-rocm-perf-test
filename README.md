@@ -24,8 +24,8 @@ Below are examples of the benchmark running on a g4ad.xlarge instance.
 
 <div align="center">
 
-<img width="1000" height="537" alt="img1" src="https://github.com/user-attachments/assets/626a4f1d-46c4-43b0-a951-6ee47adade56" />
-<img width="1000" height="858" alt="img2" src="https://github.com/user-attachments/assets/863fe79d-1571-4638-be63-c7c1f18a1806" />
+<img width="1000" alt="img1" src="https://github.com/user-attachments/assets/626a4f1d-46c4-43b0-a951-6ee47adade56" />
+<img width="1000" alt="img2" src="https://github.com/user-attachments/assets/863fe79d-1571-4638-be63-c7c1f18a1806" />
 
 </div>
 
